@@ -488,6 +488,11 @@ class StoreFailureTest(unittest.TestCase):
         self.assertIn("All quiet. No agent is working.", text)
         self.assertIn("a shows the history", text)
         self.assertIn("all quiet", text.splitlines()[0])
+        # Nothing is selected, so there is no detail pane and no divider: the message has the screen.
+        self.assertNotIn("│", text)
+        line = next(ln for ln in text.splitlines() if "All quiet." in ln)
+        left_pad = line.index("All quiet.")
+        self.assertAlmostEqual(left_pad, (140 - len("All quiet. No agent is working.")) // 2, delta=1)
 
 
 if __name__ == "__main__":

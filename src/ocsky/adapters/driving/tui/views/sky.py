@@ -282,7 +282,8 @@ def draw_focus(cv: Canvas, app: App, s: Session, x0: int, y0: int, w: int, h: in
 
 def draw(cv: Canvas, app: App, t: float) -> None:
     th = app.theme
-    focus = cv.w >= FOCUS_MIN_COLS
+    # With nothing to select there is no detail to show: the list takes the whole width.
+    focus = cv.w >= FOCUS_MIN_COLS and bool(app.snapshot.rows)
     right_w = max(38, min(64, cv.w * 2 // 5)) if focus else 0
     left_w = cv.w - right_w - (1 if focus else 0)
     height = cv.h - 1 - LIST_TOP
