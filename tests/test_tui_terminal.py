@@ -95,8 +95,10 @@ class WindowsKeysTest(unittest.TestCase):
 
 class SystemTerminalTest(unittest.TestCase):
     def test_windows_gets_the_windows_terminal_without_touching_the_console(self):
+        # On Windows the standard library has already imported msvcrt, so compare before and after.
+        before = "msvcrt" in sys.modules
         self.assertIsInstance(system_terminal("win32"), WindowsTerminal)
-        self.assertNotIn("msvcrt", sys.modules)
+        self.assertEqual("msvcrt" in sys.modules, before)
 
     def test_every_other_platform_gets_the_posix_terminal(self):
         for platform in ("linux", "darwin", "freebsd14"):
