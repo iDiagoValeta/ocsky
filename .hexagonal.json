@@ -1,0 +1,23 @@
+{
+  "core": ["src/ocsky/core"],
+  "ports": ["src/ocsky/core/ports"],
+  "driving_adapters": ["src/ocsky/adapters/driving"],
+  "driven_adapters": ["src/ocsky/adapters/driven"],
+  "composition_root": ["src/ocsky/main.py"],
+  "forbidden_in_core": [
+    "sqlite3",
+    "subprocess",
+    "os",
+    "time",
+    "shutil",
+    "pathlib",
+    "socket",
+    "tempfile",
+    "urllib",
+    "termios",
+    "tty",
+    "select",
+    "signal",
+    "argparse"
+  ]
+}

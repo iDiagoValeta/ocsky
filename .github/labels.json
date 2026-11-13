@@ -1,0 +1,52 @@
+[
+  {
+    "name": "kind/feature",
+    "color": "0E8A16",
+    "description": "New functionality"
+  },
+  {
+    "name": "kind/bug",
+    "color": "D73A4A",
+    "description": "Something does not work as it should"
+  },
+  {
+    "name": "kind/improvement",
+    "color": "A2EEEF",
+    "description": "Improvement to something existing without new functionality"
+  },
+  {
+    "name": "kind/refactoring",
+    "color": "5319E7",
+    "description": "Internal change without a behaviour change"
+  },
+  {
+    "name": "kind/documentation",
+    "color": "0075CA",
+    "description": "Documentation only"
+  },
+  {
+    "name": "kind/dependency",
+    "color": "FBCA04",
+    "description": "Dependency bump or change"
+  },
+  {
+    "name": "kind/internal",
+    "color": "BFD4F2",
+    "description": "CI, tooling and repo configuration"
+  },
+  {
+    "name": "kind/security",
+    "color": "B60205",
+    "description": "Security patch or issue"
+  },
+  {
+    "name": "breaking",
+    "color": "D93F0B",
+    "description": "Breaks compatibility; the final commit must carry ! or BREAKING CHANGE"
+  },
+  {
+    "name": "skip-release",
+    "color": "C5DEF5",
+    "description": "Must not produce a release (CI, documentation, tooling)"
+  }
+]

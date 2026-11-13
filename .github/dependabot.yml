@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # ocsky has no Python dependencies, so the only thing to keep current is the
+  # actions the workflows use.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "kind/dependency"
+    commit-message:
+      # ci(deps): ... does not trigger a release on its own.
+      prefix: "ci"
+    open-pull-requests-limit: 5

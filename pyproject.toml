@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ocsky"
+dynamic = ["version"]
+description = "A live, animated terminal view of your opencode agents."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Ignacio Diago Valeta" }]
+keywords = ["opencode", "tui", "agents", "terminal", "observability"]
+classifiers = [
+  "Environment :: Console",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python :: 3",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/iDiagoValeta/ocsky"
+
+[project.scripts]
+ocsky = "ocsky.main:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "ocsky.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py39"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# typing.List and friends stay: the annotations must read the same on Python 3.9.
+select = ["E", "F", "W", "B"]

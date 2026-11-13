@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A new push to the same ref makes the older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Python 3.9, the oldest supported version
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.9"
+      - run: python -m unittest discover -s tests -v
+      # The newest version also gets lint and a run that turns deprecations into errors,
+      # so the code does not rot before the next Python removes something.
+      - name: Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install ruff==0.16.8
+      - run: ruff check src tests tools
+      - run: python -W error::DeprecationWarning -m unittest discover -s tests -v
+      # Tests import from src/, so only an install proves the package and its entry point are complete.
+      - name: Install smoke test
+        run: |
+          python -m pip install .
+          ocsky --version
+          ocsky --demo --once 120x32 > /dev/null
+
+  platforms:
+    # macOS and Windows have their own terminal, process and path code that Linux cannot exercise.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s tests -v
+      - name: Install smoke test
+        env:
+          # The Windows console defaults to a legacy code page that cannot encode the frame when
+          # stdout is a pipe or a file.
+          PYTHONUTF8: "1"
+        run: |
+          python -m pip install .
+          ocsky --demo --once 120x32

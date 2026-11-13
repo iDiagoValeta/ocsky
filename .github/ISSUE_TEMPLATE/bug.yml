@@ -1,0 +1,59 @@
+name: Bug
+description: Something does not work as it should
+title: "[bug] "
+labels: ["kind/bug"]
+body:
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: What happens
+      description: The observed behaviour, without interpretation.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: "`ocsky --demo` reproduces most display problems without opencode."
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: ocsky version
+      description: The output of `ocsky --version`.
+      placeholder: ocsky 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Ubuntu 24.04, macOS 15, Windows 11
+    validations:
+      required: true
+  - type: input
+    id: terminal
+    attributes:
+      label: Terminal emulator
+      description: Name and version, and whether you run inside tmux or screen.
+      placeholder: kitty 0.35, iTerm2, Windows Terminal
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: A screenshot or the output of `ocsky --demo --once 120x32`. Session titles and prompts can be private; remove them before pasting.
+    validations:
+      required: false
