@@ -13,10 +13,10 @@ if TYPE_CHECKING:
 # (keys as typed, key of the description). The order is the order of the box.
 KEYS: List[Tuple[str, str]] = [
     ("↑ ↓  j k", "help.select"), ("PgUp PgDn", "help.page"), (icons.KEY_ENTER + "  l  →", "help.trace"),
-    ("esc  h  ←", "help.back"), ("tab  c", "help.clock"), ("space", "help.fold"),
+    ("esc  h  ←", "help.back"), ("tab  c", "help.clock"), ("n", "help.backdrop"), ("space", "help.fold"),
     ("a", "help.history"), ("r", "help.range"), ("o", "help.open"), ("y", "help.copy_id"),
-    ("Y", "help.copy_dir"), ("L", "help.lang"), ("t", "help.theme"), ("?", "help.help"),
-    ("q", "help.quit"),
+    ("Y", "help.copy_dir"), ("L", "help.lang"), ("t", "help.theme"), ("p", "help.palette"),
+    ("?", "help.help"), ("q", "help.quit"),
 ]
 KEY_COL_W = 11
 

@@ -14,7 +14,8 @@ from ocsky.adapters.driving.tui.canvas import RGB, Braille, Canvas, mix, xterm25
 from ocsky.adapters.driving.tui.fmt import fmt_age, fmt_cost, fmt_tokens
 from ocsky.adapters.driving.tui.i18n import LANGS, STRINGS, Tr
 from ocsky.adapters.driving.tui.text import char_width, clean, fit, short_dir, text_width, wrap
-from ocsky.adapters.driving.tui.theme import ACCENTS, LATTE, MOCHA, Theme, default_colors
+from ocsky.adapters.driving.tui.palettes import LATTE, MOCHA, PALETTES
+from ocsky.adapters.driving.tui.theme import ACCENTS, NEUTRALS, Theme, default_colors
 
 RED: RGB = (255, 0, 0)
 WHITE: RGB = (255, 255, 255)
@@ -203,6 +204,21 @@ class ThemeTest(unittest.TestCase):
         self.assertEqual(th.base, (0x1e, 0x1e, 0x2e))
         self.assertEqual(len(th.accents), len(ACCENTS))
         self.assertEqual(Theme(LATTE).red, (0xd2, 0x0f, 0x39))
+
+    def test_every_palette_has_every_colour_and_a_pair_on_the_other_side(self):
+        names = NEUTRALS + ACCENTS + ["mantle", "crust", "red", "rosewater"]
+        for key, p in PALETTES.items():
+            th = Theme(p.colors)
+            for name in names:
+                self.assertEqual(len(getattr(th, name)), 3, (key, name))
+            self.assertIn(p.pair, PALETTES, key)
+            self.assertNotEqual(Theme(PALETTES[p.pair].colors).light, th.light, key)
+
+    def test_a_missing_neutral_is_blended_from_its_neighbours(self):
+        th = Theme(PALETTES["nord"].colors)  # Nord publishes nothing between nord3 and nord4
+        self.assertEqual(th.surface2, (0x4c, 0x56, 0x6a))
+        self.assertEqual(th.text, (0xd8, 0xde, 0xe9))
+        self.assertTrue(th.surface2 < th.overlay0 < th.overlay1 < th.subtext0 < th.text)
 
     def test_model_color_is_stable_across_calls_and_instances(self):
         first = Theme(MOCHA).model_color("provider/model-a", set())

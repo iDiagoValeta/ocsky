@@ -77,7 +77,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         stack.callback(sessions.close)
         observatory = Observatory(sessions, processes, clock, home, here)
         options = Options(range=args.range, all=args.all, view=args.view,
-                          light=args.light or saved.get("theme") == "light",
+                          backdrop=args.backdrop or saved.get("backdrop") or "stars",
+                          light=args.light or (not saved.get("palette") and saved.get("theme") == "light"),
+                          palette=args.palette or saved.get("palette", ""),
                           colors=args.colors or default_colors(os.environ), lang=lang,
                           instant=bool(args.once))
         app = App(observatory, clock, OpencodeLauncher(), Osc52Clipboard(sys.stdout), prefs, options, home)

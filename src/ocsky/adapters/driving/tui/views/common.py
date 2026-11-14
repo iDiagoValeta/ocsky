@@ -27,8 +27,9 @@ from ocsky.core.observatory import PULSE_BUCKETS
 if TYPE_CHECKING:
     from ocsky.adapters.driving.tui.app import App
 
-# How much of the star colour reaches the cell: the sky is a backdrop, never the subject.
-STAR_MIX = 0.5
+# How much of the star colour reaches the cell: the sky is a backdrop, never the subject. A light
+# palette needs more, or its stars fade into the paper.
+STAR_MIX = {False: 0.5, True: 0.8}
 STAR_COUNT = 260
 
 
@@ -102,7 +103,7 @@ def starfield(cv: Canvas, theme: Theme, x0: int, y0: int, w: int, h: int, t: flo
         if glow < 0.55:
             continue
         ch = icons.STAR_FAINT if glow < 0.9 else icons.STAR_BRIGHT if glow > 0.985 else icons.STAR_DIM
-        cv.put(x, y, ch, mix(cv.bg[y][x], theme.overlay0, glow * STAR_MIX))
+        cv.put(x, y, ch, mix(cv.bg[y][x], theme.overlay0, glow * STAR_MIX[theme.light]))
 
 
 def glyph(app: App, s: Session, t: float) -> Tuple[str, RGB]:

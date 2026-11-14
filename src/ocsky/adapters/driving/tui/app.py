@@ -1,15 +1,19 @@
 """The state of the interface: what is selected, which view is open, and what every key does."""
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
 
 from ocsky.adapters.driving.tui.canvas import RGB, Canvas
 from ocsky.adapters.driving.tui.i18n import Tr
-from ocsky.adapters.driving.tui.theme import LATTE, MOCHA, Theme
+from ocsky.adapters.driving.tui.palettes import DARK, LIGHT, PALETTES
+from ocsky.adapters.driving.tui.theme import Theme
+from ocsky.adapters.driving.tui.views.backdrops import BACKDROP_NAMES
 from ocsky.adapters.driving.tui.views import clock as clock_view
 from ocsky.adapters.driving.tui.views import common
 from ocsky.adapters.driving.tui.views import help as help_view
+from ocsky.adapters.driving.tui.views import palette_menu
 from ocsky.adapters.driving.tui.views import sky, trace
 from ocsky.core.model import Session, Snapshot, Step
 from ocsky.core.observatory import Observatory
@@ -38,13 +42,24 @@ KEY_PAGE_UP, KEY_PAGE_DOWN = "\x1b[5~", "\x1b[6~"
 
 
 @dataclass
+class PaletteMenu:
+    """The open palette menu. Moving through it already wears the palette; esc goes back to `before`."""
+
+    before: str
+    query: str = ""
+    index: int = 0
+
+
+@dataclass
 class Options:
     """What the person asked for on the command line. main.py fills it in; nothing here reads the system."""
 
     range: str = "24h"
     all: bool = False
     view: str = "sky"
+    backdrop: str = "stars"  # what the sky draws behind the list
     light: bool = False
+    palette: str = ""  # a name from PALETTES; empty means Catppuccin, Latte when light is set
     colors: str = "truecolor"
     lang: str = "en"
     instant: bool = False  # draw thoughts whole instead of typing them in (a single frame)
@@ -61,10 +76,15 @@ class App:
         self.options = options
         self.home = home
         self.tr = Tr(options.lang)
-        self.light = options.light
-        self.theme = Theme(LATTE if self.light else MOCHA)
+        name = options.palette if options.palette in PALETTES else (LIGHT if options.light else DARK)
+        if options.light and not Theme(PALETTES[name].colors).light:
+            name = PALETTES[name].pair  # --light wins over a dark palette kept from last time
+        self.palette = name
+        self.theme = Theme(PALETTES[name].colors)
+        self.menu: Optional[PaletteMenu] = None
         self.range_index = [key for key, _ in RANGES].index(options.range)
         self.view = options.view
+        self.backdrop = options.backdrop if options.backdrop in BACKDROP_NAMES else BACKDROP_NAMES[0]
         self.only_active = not options.all  # live agents first; the history is one key away
         self.snapshot = Snapshot(sessions=[], rows=[], procs=[], models=[])
         self.model_colors: Dict[str, RGB] = {}
@@ -156,12 +176,17 @@ class App:
         common.draw_footer(cv, self, screen.hints(self))
         if self.help_open:
             help_view.draw(cv, self)
+        if self.menu:
+            palette_menu.draw(cv, self)
         return cv
 
     # -- keys
 
     def key(self, k: str) -> bool:
         """Handle one key. False means quit."""
+        if self.menu:
+            self._key_menu(k)
+            return True
         if self.help_open:
             self.help_open = False
             return True
@@ -225,6 +250,11 @@ class App:
             self._switch_language()
         elif k == "t":
             self._switch_theme()
+        elif k == "p":
+            self.menu = PaletteMenu(self.palette)
+            self.menu.index = max(0, self.palette_choices().index(self.palette))
+        elif k in ("n", "N"):  # with caps lock left on after L, the key still answers
+            self._next_backdrop()
         elif k == "o" and s:
             self.pending_open = s
         elif k == "y" and s:
@@ -249,17 +279,63 @@ class App:
             self.expanded.add(target)
         self.refresh(force=True)
 
+    def _next_backdrop(self) -> None:
+        self.backdrop = BACKDROP_NAMES[(BACKDROP_NAMES.index(self.backdrop) + 1) % len(BACKDROP_NAMES)]
+        self._save({"backdrop": self.backdrop})
+        self._set_toast(self.tr("toast.backdrop", name=self.tr("backdrop." + self.backdrop)))
+
     def _switch_language(self) -> None:
         self.tr = self.tr.next()
         self._save({"lang": self.tr.lang})
         self._set_toast(self.tr("toast.lang"))
 
     def _switch_theme(self) -> None:
-        self.light = not self.light
-        self.theme = Theme(LATTE if self.light else MOCHA)
+        self._wear(PALETTES[self.palette].pair)
+        self._keep_palette()
+
+    # -- palettes
+
+    def palette_choices(self) -> List[str]:
+        """The palettes whose name holds what was typed in the menu, accents and case aside."""
+        query = _plain(self.menu.query if self.menu else "")
+        return [name for name, p in PALETTES.items() if query in _plain(p.label)]
+
+    def _wear(self, name: str) -> None:
+        self.palette = name
+        self.theme = Theme(PALETTES[name].colors)
         self._assign_colors()
-        self._save({"theme": "light" if self.light else "dark"})
-        self._set_toast(self.tr("toast.theme_light" if self.light else "toast.theme_dark"))
+
+    def _keep_palette(self) -> None:
+        self._save({"palette": self.palette, "theme": "light" if self.theme.light else "dark"})
+        self._set_toast(self.tr("toast.palette", name=PALETTES[self.palette].label))
+
+    def _key_menu(self, k: str) -> None:
+        menu = self.menu
+        assert menu is not None
+        if k in ("\r", "\n"):
+            self.menu = None
+            self._keep_palette()
+            return
+        if k in ("\x1b", "\x03"):
+            self.menu = None
+            self._wear(menu.before)
+            return
+        if k == "\x1b[A":
+            menu.index -= 1
+        elif k == "\x1b[B":
+            menu.index += 1
+        elif k == KEY_PAGE_UP:
+            menu.index -= PAGE
+        elif k == KEY_PAGE_DOWN:
+            menu.index += PAGE
+        elif k in ("\x7f", "\x08"):
+            menu.query, menu.index = menu.query[:-1], 0
+        elif len(k) == 1 and k.isprintable():
+            menu.query, menu.index = menu.query + k, 0
+        choices = self.palette_choices()
+        menu.index = max(0, min(menu.index, len(choices) - 1))
+        if choices:
+            self._wear(choices[menu.index])  # the whole screen previews the palette under the cursor
 
     def _save(self, change: Dict[str, str]) -> None:
         prefs = self.prefs.load()
@@ -280,3 +356,8 @@ class App:
             self.opener.open(s)
         except OSError:
             self._set_toast(self.tr("toast.open_failed"))
+
+
+def _plain(text: str) -> str:
+    """Lower case without accents, so "rose" finds "Rosé"."""
+    return "".join(c for c in unicodedata.normalize("NFKD", text.lower()) if not unicodedata.combining(c))
