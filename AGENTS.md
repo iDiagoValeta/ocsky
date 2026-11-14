@@ -1,6 +1,6 @@
 # AGENTS.md
 
-ocsky is a live, animated terminal view of opencode agents. It reads opencode's local SQLite database read-only and shows which sessions are working, waiting or finished, grouped by directory, with subagents under their parent, a 24 hour clock view and the trace of one session. Python 3.9+, standard library only. User docs are in `README.md`, the human workflow in `CONTRIBUTING.md`.
+ocsky is a live, animated terminal view of opencode agents. It reads opencode's local SQLite database read-only and shows which sessions are working, waiting or finished, grouped by directory, with subagents under their parent, a 24 hour clock view and the trace of one session. Python 3.9+, standard library only. User docs are in `README.md` and `docs/usage.md` (keys, options, platforms), the human workflow in `CONTRIBUTING.md`.
 
 ## Architecture
 
@@ -35,7 +35,7 @@ tools/render_demo.py   regenerates docs/demo.gif and the stills in docs/
 - No network access. The only actions are local: open a session in opencode, copy an id or a directory through OSC 52.
 - No user-visible string outside `src/ocsky/adapters/driving/tui/i18n.py`. Every key exists in every language with the same placeholders (a test checks it).
 - Everything in the repo is English: code, comments, docs, tests. No em dashes, en dashes or middle dots as punctuation in prose.
-- Docs describe the current code, not its history. Update `README.md` when a key, an option or a platform behaviour changes.
+- Docs describe the current code, not its history. Update `docs/usage.md` when a key, an option or a platform behaviour changes; keep `README.md` short.
 - Keep changes surgical: touch what the task needs, match the existing style.
 
 ## Commands

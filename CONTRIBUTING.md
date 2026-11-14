@@ -43,7 +43,19 @@ Releases are automatic: release-please reads the squashed commits on `main`, kee
 
 ## Architecture rules
 
-ocsky is hexagonal ([layout](README.md#how-it-is-built)). `tests/test_architecture.py` fails the build when one of these is broken:
+ocsky is hexagonal: the core knows nothing about SQLite, the terminal or the operating system.
+
+```
+src/ocsky/
+  main.py                 composition root: the only module that builds adapters
+  core/                   model, states, tree, observatory (pure, no IO)
+    ports/                one Protocol per thing the core needs from outside
+  adapters/
+    driven/               SQLite, processes, clock, launcher, clipboard, preferences
+    driving/              command line and the terminal interface (app, views, i18n)
+```
+
+`tests/test_architecture.py` fails the build when one of these is broken:
 
 - `core/` imports only `ocsky.core` and `__future__`, `dataclasses`, `typing`, `json`, `hashlib`, `math`, `unicodedata`. No `os`, `time`, `sqlite3`, `subprocess`, no `open()`.
 - `core/ports/` holds one `Protocol` per thing the core needs from outside. Port names say what they are for, not which technology serves them.
@@ -72,4 +84,4 @@ pip install Pillow
 python3 tools/render_demo.py
 ```
 
-This rewrites `docs/demo.gif`, `docs/sky.png` and `docs/clock.png` from the demo database with a fixed clock, so the output is the same on every run. Commit the images only when the interface changed.
+This rewrites `docs/demo.gif` and the four stills listed in `STILLS` from the demo database with a fixed clock, so the output is the same on every run. Commit the images only when the interface changed.
