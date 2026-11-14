@@ -84,14 +84,18 @@ class Canvas:
                 if ch == "":
                     continue
                 style = (self.fg[y][x], self.bg[y][x], self.bold[y][x])
+                if ch == " " and cur is not None and style[1] == cur[1]:
+                    style = cur  # a blank shows only its background, so its ink needs no new code
                 if style != cur:
                     fg, bg, bold = style
-                    bold_on = "1;" if bold else ""
-                    if colors == "256":
-                        out.append(f"\x1b[0;{bold_on}38;5;{xterm256(fg)};48;5;{xterm256(bg)}m")
-                    else:
-                        fg_s, bg_s = ";".join(map(str, fg)), ";".join(map(str, bg))
-                        out.append(f"\x1b[0;{bold_on}38;2;{fg_s};48;2;{bg_s}m")
+                    # Only what changed: a colour code is most of the bytes on a busy frame.
+                    fresh = cur is None or bold != cur[2]
+                    codes = ["0;1" if bold else "0"] if fresh else []
+                    if fresh or fg != cur[0]:
+                        codes.append(f"38;5;{xterm256(fg)}" if colors == "256" else "38;2;%d;%d;%d" % fg)
+                    if fresh or bg != cur[1]:
+                        codes.append(f"48;5;{xterm256(bg)}" if colors == "256" else "48;2;%d;%d;%d" % bg)
+                    out.append("\x1b[" + ";".join(codes) + "m")
                     cur = style
                 out.append(ch)
         out.append("\x1b[0m")

@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 INK = {False: 0.5, True: 0.72}
 # The most a glow tints a background. Text sits on it, so it stays low.
 GLOW = {False: 0.16, True: 0.13}
+GLOW_STEPS = 16  # tints the glow rounds to: neighbours share one, so the frame repeats fewer colour codes
 AURORA_INK = 0.76  # a curtain covers far more cells than a galaxy, so its dots are fainter
 ARMS_MIN, ARMS_MAX = 2, 6
 DUST = 220  # grains per arm of the galaxy
@@ -65,6 +66,7 @@ class Pane:
         if self.app.options.colors == "256":
             return
         cv, base, most = self.cv, self.app.theme.base, GLOW[self.light]
+        tints: Dict[Tuple[RGB, int], RGB] = {}
         for cy in range(self.h):
             y = self.y + cy
             row = cv.bg[y]
@@ -72,8 +74,14 @@ class Pane:
                 if row[self.x + cx] != base:
                     continue
                 col, k = light(cx, cy)
-                if k > 0.02:
-                    row[self.x + cx] = mix(base, col, k * most)
+                step = round(k * GLOW_STEPS)
+                if step > 0:
+                    # A blend of bands rounded to 16 per channel moves the faint tint by a unit or two.
+                    col = (col[0] | 15, col[1] | 15, col[2] | 15)
+                    tint = tints.get((col, step))
+                    if tint is None:
+                        tint = tints[(col, step)] = mix(base, col, step / GLOW_STEPS * most)
+                    row[self.x + cx] = tint
 
 
 def stars(pane: Pane, t: float) -> None:

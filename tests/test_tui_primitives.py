@@ -152,6 +152,23 @@ class CanvasTest(unittest.TestCase):
         self.assertIn("\x1b[0;1;38;2;255;0;0;", cv.render("truecolor"))
         self.assertIn("\x1b[0;1;38;5;", cv.render("256"))
 
+    def test_render_sends_only_the_colour_that_changes(self):
+        cv = Canvas(4, 1, BLACK, WHITE)
+        cv.put(0, 0, "a", RED)
+        cv.put(1, 0, "b", WHITE)  # new ink, same paper: only the ink is sent
+        cv.put(2, 0, " ", RED)  # a blank shows no ink: nothing is sent
+        cv.fill(3, 0, 1, 1, RED)  # new paper: only the paper is sent
+        out = cv.render("truecolor")
+        self.assertEqual(re.findall(r"\x1b\[[0-9;]*m", out)[:3],
+                         ["\x1b[0;38;2;255;0;0;48;2;0;0;0m", "\x1b[38;2;255;255;255m", "\x1b[48;2;255;0;0m"])
+        self.assertTrue(out.endswith("\x1b[0m"))
+
+    def test_render_starts_over_when_bold_changes(self):
+        cv = Canvas(2, 1, BLACK, WHITE)
+        cv.put(0, 0, "a", RED, bold=True)
+        cv.put(1, 0, "b", RED)
+        self.assertIn("a\x1b[0;38;2;255;0;0;48;2;0;0;0mb", cv.render("truecolor"))
+
 
 class BrailleTest(unittest.TestCase):
     def test_dot_sets_the_right_bit_in_its_cell(self):
