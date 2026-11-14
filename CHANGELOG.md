@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/iDiagoValeta/ocsky/compare/v0.1.0...v0.2.0) (2026-11-14)
+
+
+### Features
+
+* sky backdrops and colour palettes ([#11](https://github.com/iDiagoValeta/ocsky/issues/11)) ([0e90744](https://github.com/iDiagoValeta/ocsky/commit/0e90744d7fdb937cd40b7f401a0724cf7796d99f)), closes [#10](https://github.com/iDiagoValeta/ocsky/issues/10)
+
 ## 0.1.0 (2026-11-14)
 
 
