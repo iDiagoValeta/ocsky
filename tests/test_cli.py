@@ -13,6 +13,7 @@ from unittest import mock
 from tests import helpers  # noqa: F401
 # isort: split
 from ocsky import __version__
+from ocsky.adapters.driving.tui.palettes import PALETTES
 from ocsky.adapters.driving.cli import parse
 from ocsky.adapters.driving.tui.i18n import Tr
 from ocsky.main import main
@@ -68,10 +69,20 @@ class MainTest(unittest.TestCase):
         self.assertIn("trabajando", out.getvalue())
 
     def test_every_view_renders_in_one_frame(self):
+        for backdrop in ("stars", "galaxy", "aurora"):
+            code, out, _ = run_main(["--demo", "--once", "100x30", "--backdrop", backdrop])
+            self.assertEqual(code, 0, backdrop)
+            self.assertTrue(out.strip(), backdrop)
         for view in ("sky", "clock", "trace"):
             code, out, _ = run_main(["--demo", "--once", "100x30", "--view", view])
             self.assertEqual(code, 0, view)
             self.assertTrue(out.strip(), view)
+
+    def test_every_palette_renders_one_frame(self):
+        for palette in PALETTES:
+            code, out, _ = run_main(["--demo", "--once", "100x30", "--palette", palette])
+            self.assertEqual(code, 0, palette)
+            self.assertTrue(out.strip(), palette)
 
     def test_a_missing_database_is_reported_on_stderr(self):
         code, out, err = run_main(["--db", "/nonexistent/x.db", "--once", "100x30"])

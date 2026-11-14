@@ -24,9 +24,16 @@ Requirements: Python 3.9 or later and a terminal with 24-bit or 256 colours. The
 - Subagents drawn under the session that spawned them. Finished ones fold into `+N finished`.
 - What each agent is doing right now (the tool and its target) and its latest reasoning.
 - Three views: the sky (the live list with a detail pane), a 24 hour clock with one arc per session on its model's orbit, and the trace of one session.
+- A choice of quiet backdrops behind the list: twinkling stars with the odd shooting star, a glowing spiral galaxy with one arm per model or an aurora with one curtain per model that rises while its agents work. On a light palette they are drawn as ink and watercolour.
+- Palettes from their projects' published colours (Catppuccin, Dracula and Alucard, Gruvbox, Nord, Rosé Pine, Solarized, Tokyo Night), picked from a menu that previews each one as you move through it.
 - Only the non-zero counts in the header: `N working`, `N waiting`, or `all quiet`.
 
 ![The 24 hour clock view](docs/clock.png)
+
+| | |
+|---|---|
+| ![The galaxy backdrop](docs/galaxy.png) | ![The aurora backdrop](docs/aurora.png) |
+| ![The palette menu, previewing Nord](docs/palettes.png) | ![The aurora on Rosé Pine Dawn](docs/dawn.png) |
 
 ## Keys
 
@@ -37,13 +44,15 @@ Requirements: Python 3.9 or later and a terminal with 24-bit or 256 colours. The
 | `enter`, `l` or `→` | Open the trace of the selected session |
 | `esc`, `h` or `←` | Go back |
 | `tab` or `c` | Switch between the sky and the 24 hour clock |
+| `n` | Next backdrop of the sky: stars, galaxy, aurora |
 | `space` | Fold or unfold finished subagents |
 | `a` | Show or hide finished sessions |
 | `r` | Next time range: 1h, 6h, 24h, 7d |
 | `o` | Open the session in opencode |
 | `y` / `Y` | Copy the session id / the session directory |
 | `L` | Next language |
-| `t` | Light or dark palette |
+| `t` | Switch between light and dark, within the same palette family |
+| `p` | Palette menu: type to filter, `↑` `↓` to try one, `⏎` to keep it, `esc` to go back |
 | `?` | Help |
 | `q` or `ctrl-c` | Quit |
 
@@ -56,7 +65,9 @@ The copy keys use the terminal's OSC 52 escape sequence, so the terminal must al
 | `--range {1h,6h,24h,7d}` | Time window of sessions to show (default `24h`) |
 | `--all` | Start with the history visible |
 | `--view {sky,clock,trace}` | View to start in |
-| `--light` | Light palette (Catppuccin Latte) |
+| `--backdrop {stars,galaxy,aurora}` | What the sky draws behind the list (default: the last one used) |
+| `--light` | Light palette (Catppuccin Latte, or the light side of the remembered palette) |
+| `--palette NAME` | Colour palette, one of the names the menu lists in lower case with dashes, such as `rose-pine-dawn` (default: the last one used) |
 | `--db PATH` | opencode database file |
 | `--colors {truecolor,256}` | 24-bit colours or the 256-colour palette (default: by terminal) |
 | `--once COLSxROWS` | Print one frame of that size and exit |
@@ -68,7 +79,7 @@ The database defaults to `$XDG_DATA_HOME/opencode/opencode.db`, or `~/.local/sha
 
 ## Language
 
-English by default. Use `--lang es` or the `L` key for Spanish. The choice, and the palette chosen with `t`, are remembered in `~/.config/ocsky/config.json` (`$XDG_CONFIG_HOME/ocsky/config.json` when set, `%APPDATA%\ocsky\config.json` on Windows).
+English by default. Use `--lang es` or the `L` key for Spanish. The choice, and the palette, are remembered in `~/.config/ocsky/config.json` (`$XDG_CONFIG_HOME/ocsky/config.json` when set, `%APPDATA%\ocsky\config.json` on Windows).
 
 ## Platforms
 
@@ -112,7 +123,7 @@ git clone https://github.com/iDiagoValeta/ocsky
 cd ocsky
 python3 -m unittest discover -s tests
 ruff check src tests tools
-python3 tools/render_demo.py   # regenerates docs/demo.gif, docs/sky.png, docs/clock.png (needs Pillow)
+python3 tools/render_demo.py   # regenerates docs/demo.gif and the stills in docs/ (needs Pillow)
 ```
 
 Run from the checkout with `PYTHONPATH=src python3 -m ocsky --demo`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow.

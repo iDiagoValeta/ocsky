@@ -1,25 +1,14 @@
-"""Colour palettes (Catppuccin Mocha and Latte), the model accents and the default colour mode."""
+"""A palette as RGB colours, the model accents and the default colour mode."""
 from __future__ import annotations
 
 import hashlib
 from collections.abc import Mapping
 from typing import Dict, List
 
-from ocsky.adapters.driving.tui.canvas import RGB
+from ocsky.adapters.driving.tui.canvas import RGB, mix
 
-# Catppuccin, a predefined palette: Mocha for dark terminals, Latte for light ones.
-MOCHA = {"base": "1e1e2e", "mantle": "181825", "crust": "11111b", "surface0": "313244",
-         "surface1": "45475a", "surface2": "585b70", "overlay0": "6c7086", "overlay1": "7f849c",
-         "subtext0": "a6adc8", "text": "cdd6f4", "rosewater": "f5e0dc", "flamingo": "f2cdcd",
-         "pink": "f5c2e7", "mauve": "cba6f7", "red": "f38ba8", "maroon": "eba0ac",
-         "peach": "fab387", "yellow": "f9e2af", "green": "a6e3a1", "teal": "94e2d5",
-         "sky": "89dceb", "sapphire": "74c7ec", "blue": "89b4fa", "lavender": "b4befe"}
-LATTE = {"base": "eff1f5", "mantle": "e6e9ef", "crust": "dce0e8", "surface0": "ccd0da",
-         "surface1": "bcc0cc", "surface2": "acb0be", "overlay0": "9ca0b0", "overlay1": "8c8fa1",
-         "subtext0": "6c6f85", "text": "4c4f69", "rosewater": "dc8a78", "flamingo": "dd7878",
-         "pink": "ea76cb", "mauve": "8839ef", "red": "d20f39", "maroon": "e64553",
-         "peach": "fe640b", "yellow": "df8e1d", "green": "40a02b", "teal": "179299",
-         "sky": "04a5e5", "sapphire": "209fb5", "blue": "1e66f5", "lavender": "7287fd"}
+# The neutrals from the background to the text. A palette without one gets a blend of its neighbours.
+NEUTRALS = ["base", "surface0", "surface1", "surface2", "overlay0", "overlay1", "subtext0", "text"]
 # The accent colours a model can take, in slot order. A model's slot comes from its hash.
 ACCENTS = ["mauve", "sky", "peach", "green", "pink", "yellow", "teal", "lavender", "maroon",
            "sapphire", "flamingo", "blue"]
@@ -31,7 +20,16 @@ class Theme:
     def __init__(self, palette: Dict[str, str]):
         for name, hexv in palette.items():
             setattr(self, name, (int(hexv[0:2], 16), int(hexv[2:4], 16), int(hexv[4:6], 16)))
+        have = [i for i, name in enumerate(NEUTRALS) if name in palette]
+        for i, name in enumerate(NEUTRALS):
+            if name not in palette:
+                lo = max(j for j in have if j < i)
+                hi = min(j for j in have if j > i)
+                setattr(self, name, mix(getattr(self, NEUTRALS[lo]), getattr(self, NEUTRALS[hi]),
+                                        (i - lo) / (hi - lo)))
         self.accents: List[RGB] = [getattr(self, a) for a in ACCENTS]
+        # A light background: the backdrops draw ink on paper rather than light in the dark.
+        self.light = sum(self.base) > 3 * 128
 
     def model_color(self, model: str, taken: set) -> RGB:
         """The accent of a model: its hash picks a slot, then the first accent not already taken.

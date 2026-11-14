@@ -17,12 +17,14 @@ src/ocsky/
                    osc52_clipboard, json_preferences, demo_database
     driving/       cli.py and tui/ (app, views, canvas, theme, i18n, fmt, terminal)
 tests/             helpers.py (import first), doubles.py (in-memory driven ports)
-tools/render_demo.py   regenerates docs/demo.gif, docs/sky.png, docs/clock.png
+tools/render_demo.py   regenerates docs/demo.gif and the stills in docs/
 ```
 
 - `core/` imports only `ocsky.core`, `__future__`, `dataclasses`, `typing`, `json`, `hashlib`, `math`, `unicodedata`. No `os`, `time`, `sqlite3`, `subprocess`, no `open()`.
 - `driven` and `driving` never import each other. Inside `driving`, `tui` may import `tui`.
 - Only `main.py` imports both families and instantiates adapters.
+- A backdrop of the sky is a function in `tui/views/backdrops.py` that paints only free cells through `Pane`, plus at most a faint `Pane.glow` under them, registered in `BACKDROPS`. Keep it dim: the list is the subject. Check it on a light palette too.
+- A palette lives in `tui/palettes.py`, written in Catppuccin's colour names from its project's published colours (cite the source there), with a `pair` on the other side of the day. Never invent a colour; leave a missing neutral out and `Theme` blends it.
 - A new need of the core is a new port (a `Protocol`, named for its purpose) plus an in-memory double in `tests/doubles.py`.
 
 ## Constraints

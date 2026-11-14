@@ -14,7 +14,9 @@ from ocsky.adapters.driven.sqlite_sessions import SqliteSessions
 from ocsky.adapters.driving.tui.app import App, Options
 from ocsky.adapters.driving.tui.canvas import Canvas
 from ocsky.adapters.driving.tui.i18n import STRINGS, Tr
-from ocsky.adapters.driving.tui.theme import MOCHA, Theme
+from ocsky.adapters.driving.tui.palettes import MOCHA, PALETTES
+from ocsky.adapters.driving.tui.theme import Theme
+from ocsky.adapters.driving.tui.views.backdrops import BACKDROP_NAMES
 from ocsky.adapters.driving.tui.views.common import clock_text, pulse_top, sparkline, starfield
 from ocsky.core.model import Proc
 from ocsky.core.observatory import PULSE_BUCKETS, Observatory
@@ -179,6 +181,48 @@ class DemoAppTest(DemoFixture):
         self.assertEqual(self.app.view, "sky")
         self.assertIn("here ~/bug-hunts", frame_text(self.app))
 
+    def test_n_walks_the_backdrops_of_the_sky_and_remembers_the_last_one(self):
+        self.assertEqual(self.app.backdrop, "stars")
+        seen = []
+        for _ in BACKDROP_NAMES:
+            self.press("n")
+            seen.append(self.app.backdrop)
+            self.assertEqual(self.app.view, "sky")
+            self.assertIn("backdrop: " + self.app.backdrop, frame_text(self.app))
+            self.assertEqual(self.prefs.prefs["backdrop"], self.app.backdrop)
+        self.assertEqual(seen, BACKDROP_NAMES[1:] + BACKDROP_NAMES[:1])
+        self.press("N")
+        self.assertEqual(self.app.backdrop, BACKDROP_NAMES[1])
+
+    def test_n_changes_the_backdrop_after_any_other_key_in_any_view(self):
+        others = [UP, DOWN, PGDN, " ", "a", "r", "t", "L", "y", "Y", "?", TAB, ENTER, ESC, "c", "h", "l"]
+        for first in others:
+            for second in others:
+                self.app = self.make_app()
+                self.press(first, second)
+                if self.app.help_open:
+                    self.press(ESC)  # any key closes the help; the next one acts
+                before = self.app.backdrop
+                self.press("n")
+                self.assertNotEqual(self.app.backdrop, before, (first, second))
+
+    def test_no_backdrop_writes_over_the_list_the_headers_or_the_selection(self):
+        plain = {}
+        for name in BACKDROP_NAMES:
+            self.app = self.make_app(backdrop=name)
+            for t in (0, 700, 5_300):
+                self.clock.now = NOW + t
+                cv = self.app.canvas(140, 40)
+                text = {(x, y): cv.ch[y][x] for y in range(2, 39) for x in range(LIST_W)
+                        if cv.ch[y][x] not in " " and not 0x2800 <= ord(cv.ch[y][x] or " ") <= 0x28FF
+                        and cv.ch[y][x] not in "·⋅✧"}
+                plain.setdefault(t, text)
+                self.assertEqual(text, plain[t], name)
+                for y in range(2, 39):
+                    if cv.bg[y][0] == self.app.theme.surface0:  # the selected row
+                        self.assertNotIn(True, [0x2800 <= ord(c or " ") <= 0x28FF for c in cv.ch[y]], name)
+            self.clock.now = NOW
+
     def test_the_help_box_lists_every_key_and_any_key_closes_it_without_quitting(self):
         self.press("?")
         text = frame_text(self.app)
@@ -231,6 +275,67 @@ class DemoAppTest(DemoFixture):
         self.assertIn("48;2;239;241;245", self.app.frame(140, 40))  # Latte base
         self.press("t")
         self.assertEqual(self.prefs.prefs["theme"], "dark")
+
+    def test_t_switches_to_the_same_family_on_the_other_side_of_the_day(self):
+        self.app = self.make_app(palette="dracula")
+        self.press("t")
+        self.assertEqual(self.app.palette, "alucard")
+        self.assertTrue(self.app.theme.light)
+        self.assertEqual(self.prefs.prefs["palette"], "alucard")
+        self.assertIn("palette: Alucard", frame_text(self.app))
+        self.press("t")
+        self.assertEqual(self.app.palette, "dracula")
+
+    def test_light_wins_over_a_dark_palette_kept_from_last_time(self):
+        self.assertEqual(self.make_app(palette="gruvbox-dark", light=True).palette, "gruvbox-light")
+        self.assertEqual(self.make_app(palette="nonsense").palette, "catppuccin-mocha")
+
+
+class PaletteMenuTest(DemoFixture):
+    def test_the_menu_previews_while_moving_and_esc_puts_the_old_palette_back(self):
+        self.press("p")
+        self.assertIn("Catppuccin Mocha", frame_text(self.app))
+        self.press(DOWN)
+        self.assertEqual(self.app.palette, "dracula")  # the screen already wears it
+        self.assertIn("48;2;40;42;54", self.app.frame(140, 40))  # Dracula's background
+        self.press("\x1b")
+        self.assertIsNone(self.app.menu)
+        self.assertEqual(self.app.palette, "catppuccin-mocha")
+        self.assertNotIn("palette", self.prefs.prefs)
+
+    def test_typing_filters_accents_aside_and_enter_keeps_the_palette(self):
+        self.press("p", "r", "o", "s", "e")
+        self.assertEqual(self.app.palette_choices(), ["rose-pine", "rose-pine-dawn"])
+        self.press(DOWN, "\r")
+        self.assertIsNone(self.app.menu)
+        self.assertEqual(self.app.palette, "rose-pine-dawn")
+        self.assertEqual(self.prefs.prefs["palette"], "rose-pine-dawn")
+        self.assertEqual(self.prefs.prefs["theme"], "light")
+
+    def test_keys_typed_into_the_menu_never_quit_or_act(self):
+        self.press("p", "q", "a")
+        self.assertIsNotNone(self.app.menu)
+        self.assertEqual(self.app.menu.query, "qa")
+        self.assertIn(STRINGS["en"]["palette.none"], frame_text(self.app))
+        self.press("\x7f", "\x7f")
+        self.assertEqual(len(self.app.palette_choices()), len(PALETTES))
+
+    def test_the_menu_fits_a_small_screen(self):
+        self.press("p", PGDN)
+        cv = self.app.canvas(60, 14)
+        self.assertIn(PALETTES[self.app.palette].label, "\n".join("".join(r) for r in cv.ch))
+
+    def test_the_glow_never_tints_the_selected_row_and_stays_out_of_256_colours(self):
+        for name in BACKDROP_NAMES:
+            app = self.make_app(backdrop=name)
+            cv = app.canvas(140, 40)
+            rows = [y for y in range(2, 39) if cv.bg[y][1] == app.theme.surface0]
+            self.assertTrue(rows, name)
+            for y in rows:
+                self.assertEqual(set(cv.bg[y][:LIST_W]), {app.theme.surface0}, name)
+            plain = self.make_app(backdrop=name, colors="256").canvas(140, 40)
+            tints = {c for y in range(2, 39) for c in plain.bg[y][:LIST_W]}
+            self.assertLessEqual(tints, {app.theme.base, app.theme.surface0}, name)
 
 
 def tool_part(command: str) -> dict:

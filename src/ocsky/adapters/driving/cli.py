@@ -6,6 +6,8 @@ from typing import Callable, List, Tuple
 
 from ocsky.adapters.driving.tui.app import RANGES
 from ocsky.adapters.driving.tui.i18n import LANGS, Tr
+from ocsky.adapters.driving.tui.palettes import PALETTES
+from ocsky.adapters.driving.tui.views.backdrops import BACKDROP_NAMES
 
 VIEWS = ["sky", "clock", "trace"]
 COLOR_MODES = ["truecolor", "256"]
@@ -29,7 +31,9 @@ def parse(argv: List[str], tr: Tr) -> argparse.Namespace:
     p.add_argument("--range", choices=[key for key, _ in RANGES], default="24h", help=tr("cli.range"))
     p.add_argument("--all", action="store_true", help=tr("cli.all"))
     p.add_argument("--view", choices=VIEWS, default="sky", help=tr("cli.view"))
+    p.add_argument("--backdrop", choices=BACKDROP_NAMES, default=None, help=tr("cli.backdrop"))
     p.add_argument("--light", action="store_true", help=tr("cli.light"))
+    p.add_argument("--palette", choices=list(PALETTES), default=None, help=tr("cli.palette"))
     p.add_argument("--db", metavar="PATH", default=None, help=tr("cli.db"))
     p.add_argument("--colors", choices=COLOR_MODES, default=None, help=tr("cli.colors"))
     p.add_argument("--once", metavar="COLSxROWS", type=_size(tr), default=None, help=tr("cli.once"))

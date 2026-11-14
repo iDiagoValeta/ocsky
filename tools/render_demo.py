@@ -1,4 +1,4 @@
-"""Render the README demo: docs/sky.png, docs/clock.png and docs/demo.gif.
+"""Render the README demo: docs/demo.gif and the stills of the sky, its backdrops, palettes and the clock.
 
 A development tool, not part of the package. Run it from the repository root:
 
@@ -52,7 +52,7 @@ FONTS = {  # bold -> candidates, main font first
            NOTO + "NotoSansMono-Bold.ttf", DEJAVU + "DejaVuSans-Bold.ttf",
            NOTO + "NotoSansSymbols2-Regular.ttf", NOTO + "NotoSansSymbols-Bold.ttf"],
 }
-KEY = {"down": "\x1b[B", "space": " ", "a": "a", "tab": "\t", "enter": "\r", "esc": "\x1b"}
+KEY = {"down": "\x1b[B", "space": " ", "tab": "\t", "enter": "\r", "esc": "\x1b"}
 # (seconds from the start, key). The script of the GIF, in the order the README tells it.
 SCRIPT = [(2.5, "down"), (3.1, "down"), (3.7, "space"), (4.8, "space"), (5.5, "a"), (7.0, "a"),
           (7.5, "tab"), (10.0, "tab"), (10.5, "enter"), (12.5, "esc")]
@@ -217,7 +217,7 @@ def still(path: str, view_keys: List[str], seconds: float, glyphs: Glyphs, missi
         for _ in range(int(seconds * 1000 / FRAME_MS)):
             s.advance(FRAME_MS)
         for k in view_keys:
-            s.app.key(KEY[k])
+            s.app.key(KEY.get(k, k))  # a letter stands for itself
         draw_canvas(s.app.canvas(COLS, ROWS), glyphs, missing).save(path, optimize=True)
     finally:
         s.close()
@@ -241,7 +241,8 @@ def gif(path: str, glyphs: Glyphs, missing: Set[str], step: int = 1) -> int:
         for n in range(int(GIF_SECONDS * 1000 / FRAME_MS)):
             s.advance(FRAME_MS)
             while pending and pending[0][0] <= (n + 1) * FRAME_MS / 1000:
-                s.app.key(KEY[pending.pop(0)[1]])
+                k = pending.pop(0)[1]
+                s.app.key(KEY.get(k, k))
             canvas = s.app.canvas(COLS, ROWS)  # drawn every frame so the thoughts type in at full pace
             if n % step == 0:
                 frames.append(draw_canvas(canvas, glyphs, missing))
@@ -262,6 +263,10 @@ def main() -> int:
     missing: Set[str] = set()
     still(os.path.join(DOCS, "sky.png"), [], 3.0, glyphs, missing)
     still(os.path.join(DOCS, "clock.png"), ["tab"], 3.0, glyphs, missing)
+    still(os.path.join(DOCS, "galaxy.png"), ["n"], 3.0, glyphs, missing)
+    still(os.path.join(DOCS, "aurora.png"), ["n", "n"], 3.0, glyphs, missing)
+    still(os.path.join(DOCS, "palettes.png"), ["p", "down", "down", "down"], 3.0, glyphs, missing)
+    still(os.path.join(DOCS, "dawn.png"), ["p", "d", "a", "w", "n", "enter", "n", "n"], 3.0, glyphs, missing)
     gif_path = os.path.join(DOCS, "demo.gif")
     size = gif(gif_path, glyphs, missing)
     if missing:
@@ -271,7 +276,7 @@ def main() -> int:
     if size > GIF_LIMIT:
         print("demo.gif is %d bytes, over the %d limit" % (size, GIF_LIMIT), file=sys.stderr)
         return 1
-    for name in ("sky.png", "clock.png", "demo.gif"):
+    for name in ("sky.png", "clock.png", "galaxy.png", "aurora.png", "palettes.png", "dawn.png", "demo.gif"):
         print("%-10s %8d bytes" % (name, os.path.getsize(os.path.join(DOCS, name))))
     return 0
 

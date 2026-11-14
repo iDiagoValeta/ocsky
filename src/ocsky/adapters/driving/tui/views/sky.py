@@ -15,8 +15,8 @@ from ocsky.adapters.driving.tui.views.common import (
     repeat_suffix,
     draw_sparkline,
     pulse_top,
-    starfield,
 )
+from ocsky.adapters.driving.tui.views.backdrops import BACKDROPS, Pane
 from ocsky.core.model import STALLED, Session
 from ocsky.core.observatory import PULSE_BUCKETS
 
@@ -288,7 +288,7 @@ def draw(cv: Canvas, app: App, t: float) -> None:
     left_w = cv.w - right_w - (1 if focus else 0)
     height = cv.h - 1 - LIST_TOP
     headers = draw_list(cv, app, left_w, height, t)
-    starfield(cv, th, 0, LIST_TOP, left_w, height, t, headers, LEFT_MARGIN)
+    BACKDROPS[app.backdrop](Pane(cv, app, 0, LIST_TOP, left_w, height, headers, LEFT_MARGIN), t)
     if focus:
         for y in range(1, cv.h - 1):
             cv.put(left_w, y, icons.DIVIDER, th.surface0)
