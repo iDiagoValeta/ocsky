@@ -1,4 +1,4 @@
-"""Render the README demo: docs/demo.gif and the stills of the sky, its backdrops, palettes and the clock.
+"""Render the README demo: docs/demo.gif and four stills, each a different view on a different palette.
 
 A development tool, not part of the package. Run it from the repository root:
 
@@ -33,9 +33,9 @@ from ocsky.core.model import Proc  # noqa: E402
 from ocsky.core.observatory import Observatory  # noqa: E402
 
 DOCS = os.path.join(ROOT, "docs")
-COLS, ROWS = 120, 32
-CELL_W, CELL_H = 9, 19
-FONT_SIZE, BASELINE = 15, 15
+COLS, ROWS = 150, 38
+CELL_W, CELL_H = 11, 23
+FONT_SIZE, BASELINE = 18, 18
 FRAME_MS = 100
 DEMO_SHOP = "/home/demo/dev/shop-api"
 # Local time reads mid-afternoon whatever the time zone of the machine that renders.
@@ -53,11 +53,17 @@ FONTS = {  # bold -> candidates, main font first
            NOTO + "NotoSansSymbols2-Regular.ttf", NOTO + "NotoSansSymbols-Bold.ttf"],
 }
 KEY = {"down": "\x1b[B", "space": " ", "tab": "\t", "enter": "\r", "esc": "\x1b"}
-# (seconds from the start, key). The script of the GIF, in the order the README tells it.
-SCRIPT = [(2.5, "down"), (3.1, "down"), (3.7, "space"), (4.8, "space"), (5.5, "a"), (7.0, "a"),
-          (7.5, "tab"), (10.0, "tab"), (10.5, "enter"), (12.5, "esc")]
-GIF_SECONDS = 12.9
-GIF_LIMIT = 2_500_000
+# (seconds from the start, key). The script of the GIF: the sky and its backdrops, a few palettes
+# tried in the menu and left, the clock and the trace of one session.
+SCRIPT = [(2.5, "n"), (5.0, "n"), (7.5, "p"), (8.1, "down"), (8.6, "down"), (9.1, "down"), (9.6, "down"),
+          (10.4, "esc"), (11.0, "tab"), (13.5, "tab"), (14.0, "enter"), (16.5, "esc")]
+GIF_SECONDS = 17.0
+# (file, palette, keys): one view per still, each on another palette.
+STILLS = [("aurora.png", "rose-pine", ["n", "n"]),
+          ("clock.png", "gruvbox-dark", ["tab"]),
+          ("galaxy.png", "gruvbox-light", ["n"]),
+          ("trace.png", "tokyo-night", ["down", "enter"])]
+GIF_LIMIT = 4_000_000  # the README loads it on every visit
 
 
 class Clock:
@@ -88,7 +94,7 @@ class NoPreferences:
         del prefs
 
 
-def build_app(db_path: str, clock: Clock, instant: bool) -> Tuple[App, SqliteSessions]:
+def build_app(db_path: str, clock: Clock, instant: bool, palette: str) -> Tuple[App, SqliteSessions]:
     """The demo app and the store it reads, which the caller closes before deleting the database."""
     build_demo_db(db_path, clock.now)
     started = clock.now / 1000 - 45 * 60
@@ -96,8 +102,8 @@ def build_app(db_path: str, clock: Clock, instant: bool) -> Tuple[App, SqliteSes
                     Proc(4188, "tui", DEMO_SHOP, started + 25 * 60, 268.0)])
     store = SqliteSessions(db_path)
     observatory = Observatory(store, procs, clock, DEMO_HOME, DEMO_HERE)
-    app = App(observatory, clock, NoOpener(), NoClipboard(), NoPreferences(), Options(instant=instant),
-              DEMO_HOME)
+    app = App(observatory, clock, NoOpener(), NoClipboard(), NoPreferences(),
+              Options(instant=instant, palette=palette), DEMO_HOME)
     app.refresh(force=True)
     return app, store
 
@@ -197,10 +203,11 @@ def draw_canvas(cv: Canvas, glyphs: Glyphs, missing: Set[str]) -> Image.Image:
 class DemoRun:
     """The demo app, its clock and its temporary database, for as long as the script needs them."""
 
-    def __init__(self, instant: bool):
+    def __init__(self, instant: bool, palette: str = ""):
         self.tmp = tempfile.TemporaryDirectory()
         self.clock = Clock(NOW)
-        self.app, self.store = build_app(os.path.join(self.tmp.name, "opencode.db"), self.clock, instant)
+        self.app, self.store = build_app(os.path.join(self.tmp.name, "opencode.db"), self.clock, instant,
+                                         palette)
 
     def advance(self, ms: int) -> None:
         self.clock.now += ms
@@ -211,8 +218,9 @@ class DemoRun:
         self.tmp.cleanup()
 
 
-def still(path: str, view_keys: List[str], seconds: float, glyphs: Glyphs, missing: Set[str]) -> None:
-    s = DemoRun(instant=True)
+def still(path: str, palette: str, view_keys: List[str], seconds: float, glyphs: Glyphs,
+          missing: Set[str]) -> None:
+    s = DemoRun(instant=True, palette=palette)
     try:
         for _ in range(int(seconds * 1000 / FRAME_MS)):
             s.advance(FRAME_MS)
@@ -261,12 +269,8 @@ def main() -> int:
     os.makedirs(DOCS, exist_ok=True)
     glyphs = Glyphs()
     missing: Set[str] = set()
-    still(os.path.join(DOCS, "sky.png"), [], 3.0, glyphs, missing)
-    still(os.path.join(DOCS, "clock.png"), ["tab"], 3.0, glyphs, missing)
-    still(os.path.join(DOCS, "galaxy.png"), ["n"], 3.0, glyphs, missing)
-    still(os.path.join(DOCS, "aurora.png"), ["n", "n"], 3.0, glyphs, missing)
-    still(os.path.join(DOCS, "palettes.png"), ["p", "down", "down", "down"], 3.0, glyphs, missing)
-    still(os.path.join(DOCS, "dawn.png"), ["p", "d", "a", "w", "n", "enter", "n", "n"], 3.0, glyphs, missing)
+    for name, palette, keys in STILLS:
+        still(os.path.join(DOCS, name), palette, keys, 3.0, glyphs, missing)
     gif_path = os.path.join(DOCS, "demo.gif")
     size = gif(gif_path, glyphs, missing)
     if missing:
@@ -276,7 +280,7 @@ def main() -> int:
     if size > GIF_LIMIT:
         print("demo.gif is %d bytes, over the %d limit" % (size, GIF_LIMIT), file=sys.stderr)
         return 1
-    for name in ("sky.png", "clock.png", "galaxy.png", "aurora.png", "palettes.png", "dawn.png", "demo.gif"):
+    for name in [still[0] for still in STILLS] + ["demo.gif"]:
         print("%-10s %8d bytes" % (name, os.path.getsize(os.path.join(DOCS, name))))
     return 0
 
