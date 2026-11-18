@@ -1,5 +1,7 @@
 # ocsky
 
+> **Context.** Built in November 2026 as a personal project, two months after I started as an AI Engineer at Inditex and after leading a team at Auro AI. It is a tool for watching the opencode agents I run, written in the style of my recent repos: hexagonal architecture checked by a test, CI on three platforms, releases with release-please, and `AGENTS.md` and `CLAUDE.md` for coding agents.
+
 A live, animated terminal view of your [opencode](https://opencode.ai) agents: which sessions are working, waiting or finished, and what each one is doing right now.
 
 ![ocsky showing agents at work](docs/demo.gif)
